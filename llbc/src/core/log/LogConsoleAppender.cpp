@@ -84,7 +84,7 @@ int LLBC_LogConsoleAppender::Output(const LLBC_LogData &data)
     }
 
     const int logLevel = data.level;
-    if (logLevel < GetLogLevel())
+    if (!data.inColorList && logLevel < GetLogLevel())
         return LLBC_OK;
 
     FILE *out = nullptr;
@@ -118,7 +118,7 @@ int LLBC_LogConsoleAppender::Output(const LLBC_LogData &data)
     LLBC_FilePrint(out, "%s", logFmtBuf.c_str());
 
 #if LLBC_CFG_LOG_DIRECT_FLUSH_TO_CONSOLE
-    if (logLevel < _LogLevel::Warn) 
+    if (logLevel < _LogLevel::Warn)
         LLBC_FlushFile(stdout);
 #endif
 

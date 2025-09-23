@@ -43,6 +43,11 @@ inline int LLBC_LoggerConfigInfo::GetLogLevel() const
     return MIN(_consoleLogLevel, _fileLogLevel);
 }
 
+inline const std::unordered_set<std::string>* LLBC_LoggerConfigInfo::GetLogColorFilterList() const
+{
+    return &_log_color_filter_list;
+}
+
 inline bool LLBC_LoggerConfigInfo::IsAsyncMode() const
 {
     return _asyncMode;

@@ -367,15 +367,37 @@ void LLBC_Logger::ClearAllLogTraces()
     _lock.Unlock();
 }
 
+bool LLBC_Logger::InLogColorFilterList() const
+{ 
+    if (UNLIKELY(!_logTraceMgr)) 
+        return false;
+
+    const auto list = _config->GetLogColorFilterList();
+    const auto logTraceContents = _logTraceMgr->GetLogTraceContents(LLBC_LogTrace::TraceKey("uin"));
+    if (UNLIKELY(!list) || UNLIKELY(!logTraceContents))
+        return false;
+
+    for (const auto& content : *logTraceContents)
+    {
+        std::string con(content.first.str, content.first.strLen);
+        if (list->find(con) != list->end())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 int LLBC_Logger::VOutput(int level,
                          const char *tag,
                          const char *file,
                          int line,
                          const char *func,
+                         const bool inColorList,                         
                          const char *fmt,
                          va_list va) 
 {
-    if (_logLevel > level)
+    if (!inColorList && level < _logLevel)
         return LLBC_OK;
 
     LLBC_LogData *data = BuildLogData(level,
@@ -383,6 +405,7 @@ int LLBC_Logger::VOutput(int level,
                                       file,
                                       line,
                                       func,
+                                      inColorList,
                                       fmt,
                                       va);
     if (UNLIKELY(!data))
@@ -451,6 +474,7 @@ LLBC_FORCE_INLINE LLBC_LogData *LLBC_Logger::BuildLogData(int level,
                                                           const char *file,
                                                           int line,
                                                           const char *func,
+                                                          const bool inColorList,
                                                           const char *fmt,
                                                           va_list va)
 {
@@ -489,6 +513,7 @@ LLBC_FORCE_INLINE LLBC_LogData *LLBC_Logger::BuildLogData(int level,
                              file,
                              line,
                              func,
+                             inColorList,
                              _logTimeAccessor->NowInMicroseconds(),
                              data,
                              libTls);
@@ -538,6 +563,7 @@ LLBC_FORCE_INLINE LLBC_LogData *LLBC_Logger::BuildLogData(int level,
                              file,
                              line,
                              func,
+                             false,
                              time,
                              data,
                              __LLBC_GetLibTls());
@@ -550,6 +576,7 @@ LLBC_FORCE_INLINE void LLBC_Logger::FillLogDataNonMsgMembers(int level,
                                                              const char *file,
                                                              int line,
                                                              const char *func,
+                                                             const bool inColorList,
                                                              sint64 time,
                                                              LLBC_LogData *logData,
                                                              __LLBC_LibTls *libTls)
@@ -562,6 +589,9 @@ LLBC_FORCE_INLINE void LLBC_Logger::FillLogDataNonMsgMembers(int level,
 
     // fill: log time.
     logData->logTime = time;
+
+    // fill: is in LogColorFilterList
+    logData->inColorList = inColorList;
 
     // fill: file, func.
     if (file)

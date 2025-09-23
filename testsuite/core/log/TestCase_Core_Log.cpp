@@ -35,9 +35,9 @@ int TestCase_Core_Log::Run(int argc, char *argv[])
 {
     LLBC_PrintLn("core/log test:");
     LLBC_PrintLn("Current dir:%s", LLBC_Directory::CurDir().c_str());
-
+    
     // Do uninited log message test
-    DoUninitLogTest();
+    // DoUninitLogTest();
 
     // Initialize logger manager.
 #if LLBC_TARGET_PLATFORM_IPHONE
@@ -46,7 +46,6 @@ int TestCase_Core_Log::Run(int argc, char *argv[])
 #else
 
     _logCfgFilePath = "LogTestCfg.cfg";
-    // _logCfgFilePath  = "LogTestCfg.xml";
     const LLBC_TimeSpan logTimeOffset = LLBC_TimeSpan::FromHours(10, 30, 30);
     if(LLBC_LoggerMgrSingleton->Initialize(_logCfgFilePath, logTimeOffset) != LLBC_OK)
 #endif
@@ -58,6 +57,9 @@ int TestCase_Core_Log::Run(int argc, char *argv[])
 
     // Defer finalize logger mgr.
     LLBC_Defer(LLBC_LoggerMgrSingleton->Finalize());
+
+    DoLogColorFilterTest();
+    return 0;
 
     // Set log hook(to root logger).
     LLBC_Logger *rootLogger = LLBC_LoggerMgrSingleton->GetRootLogger();
@@ -654,15 +656,64 @@ void TestCase_Core_Log::DoLogTraceTest()
     getchar();
 }
 
+void TestCase_Core_Log::DoLogColorFilterTest()
+{
+    LLBC_PrintLn("DoLogColorFilterTest begin");
+    auto rootLogger = LLBC_LoggerMgrSingleton->GetRootLogger();
+    // 10086 in log color filter list, log_level: WARN
+    LLBC_PrintLn("fileLogLevel: %s", LLBC_LogLevel::GetLevelStr(rootLogger->GetLogLevel()).c_str());
+    
+    LLOG_WARN("10086 in log color filter list, log_level: WARN 预期输出 4~6");
+    LLOG_TRACE("This is a uninited trace log message 1");
+    LLOG_DEBUG("This is a uninited debug log message 2");
+    LLOG_INFO("This is a uninited info log message 3");
+    LLOG_WARN("This is a uninited warn log message 4");     // 以下输出 (4~6)
+    LLOG_ERROR("This is a uninited error log message 5");
+    LLOG_FATAL("This is a uninited fatal log message 6");
+
+    LLOG_FATAL("--------------------------------------------------------------------");
+
+    rootLogger->AddLogTrace("uin", 10087); // logTrace: 10087
+    LLOG_WARN("Add key to start LogTrace test.. 10087  预期输出 10~12");
+    LLOG_TRACE("This is a uninited trace log message 7");
+    LLOG_DEBUG("This is a uninited debug log message 8");
+    LLOG_INFO("This is a uninited info log message 9");
+    LLOG_WARN("This is a uninited warn log message 10");    // 以下输出(10~12)
+    LLOG_ERROR("This is a uninited error log message 11");
+    LLOG_FATAL("This is a uninited fatal log message 12");
+    
+    LLOG_FATAL("--------------------------------------------------------------------");
+    
+    rootLogger->AddLogTrace("uin", 10086); // logTrace: 10087, 10086
+    LLOG_WARN("Add key to start LogTrace test.. 10086  预期输出 13~18");
+    LLOG_TRACE("This is a uninited trace log message 13");  // 以下输出 (13~18)
+    LLOG_DEBUG("This is a uninited debug log message 14");
+    LLOG_INFO("This is a uninited info log message 15");
+    LLOG_WARN("This is a uninited warn log message 16");
+    LLOG_ERROR("This is a uninited error log message 17");
+    LLOG_FATAL("This is a uninited fatal log message 18");
+
+    LLOG_FATAL("--------------------------------------------------------------------");
+
+    rootLogger->RemoveLogTrace("uin", 10087, true);
+    LLOG_WARN("Remove key to start LogTrace test.. 10087  预期输出 19~24");
+    LLOG_TRACE("This is a uninited trace log message 19");
+    LLOG_DEBUG("This is a uninited debug log message 20");
+    LLOG_INFO("This is a uninited info log message 21");
+    LLOG_WARN("This is a uninited warn log message 22");
+    LLOG_ERROR("This is a uninited error log message 23");
+    LLOG_FATAL("This is a uninited fatal log message 24");
+}
+
 template <typename _KeyTy, typename _ContentTy>
 void TestCase_Core_Log::AddLogTrace(const _KeyTy &key, const _ContentTy &content)
 {
     const auto keyStr = LLBC_Variant(key).ToString();
     const auto contentStr = LLBC_Variant(content).ToString();
 
-    LLOG_INFO("Before add %s:%s", keyStr.c_str(), contentStr.c_str());
+    LLOG_WARN("Before add %s:%s", keyStr.c_str(), contentStr.c_str());
     LLOG_ADD_TRACE(key, content)
-    LLOG_INFO("After add %s:%s", keyStr.c_str(), contentStr.c_str());
+    LLOG_WARN("After add %s:%s", keyStr.c_str(), contentStr.c_str());
 }
 
 void TestCase_Core_Log::OnLogHook(const LLBC_LogData *logData)

@@ -85,6 +85,12 @@ public:
     int GetLogLevel() const;
 
     /**
+     * get log color filter list 
+     * @return unordered_set<std::string>* - logColorFilterList.
+     */
+    const std::unordered_set<std::string>* GetLogColorFilterList() const;
+
+    /**
      * Get appender log level.
      * 
      * @param[in] appenderType - log appender type.
@@ -280,12 +286,10 @@ private:
     int _maxBackupIndex;
     int _fileBufferSize;
     bool _lazyCreateLogFile;
-
+    std::unordered_set<std::string> _log_color_filter_list;
     bool _takeOver;
 };
 
 __LLBC_NS_END
 
 #include "llbc/core/log/LoggerConfigInfoInl.h"
-
-
